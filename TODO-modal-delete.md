@@ -1,0 +1,1 @@
+# Custom Delete Modal - COMPLETE ✅\n\n- Added Bootstrap modal with "¿Quieres eliminar este cliente?", Cancelar/Aceptar buttons\n- Updated delete buttons with data-toggle/modal\n- Hidden forms per client, JS handles show/submit\n\n**Test:** /clientes → trash button → modal → Aceptar → deletes + success PNotify.

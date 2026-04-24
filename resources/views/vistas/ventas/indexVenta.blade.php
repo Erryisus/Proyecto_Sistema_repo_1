@@ -44,9 +44,8 @@
 
     <h5 class="text-center text-secondary">LISTA DE VENTAS</h5>
 
-    <a href="{{route('ventas.create')}}" class="btn btn-primary">Registrar nueva venta</a>
-
     <form action="" id="formBuscar" method="POST">
+
         @csrf
         <div class="row col-12 p-3">
             <div class="col-12 col-md-9">

@@ -182,6 +182,14 @@
                                 <span class="lbl">Productos</span>
                             </a>
                         </li>
+                        <li>
+                            <a href="{{ route('clientes.index') }}"
+                                class="{{ Request::is('clientes*') ? 'activo' : '' }}">
+                                <i class="fas fa-users icono-submenu"></i>
+                                <span class="lbl">Clientes</span>
+                            </a>
+                        </li>
+
                     </ul>
                 </li>
 
@@ -208,11 +216,25 @@
                     </ul>
                 </li>
 
-                <li class="red">
-<a href="{{ route('ventas.index') }}" class="{{ Request::is('ventas*') ? 'activo' : '' }}">
+<li class="grey with-sub {{ Request::is('ventas*') ? 'opened' : '' }}">
+                    <span>
                         <img src="{{ asset('img-inicio/programar.png') }}" class="img-inicio" alt="">
                         <span class="lbl">VENTAS</span>
-                    </a>
+                    </span>
+                    <ul>
+                        <li>
+                            <a href="{{ route('ventas.create') }}" class="{{ Request::is('ventas.create') ? 'activo' : '' }}">
+                                <i class="fas fa-plus icono-submenu"></i>
+                                <span class="lbl">Registro de ventas</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('ventas.index') }}" class="{{ Request::is('ventas.index*') ? 'activo' : '' }}">
+                                <i class="fas fa-list icono-submenu"></i>
+                                <span class="lbl">Ventas registradas</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
 
                 <li class="blue with-sub {{ Request::is('venta.reporte') || Request::is('producto.reporte') ? 'opened' : '' }}">

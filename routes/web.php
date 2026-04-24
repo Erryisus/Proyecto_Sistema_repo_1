@@ -77,14 +77,17 @@ Route::resource('entradas', EntradaController::class)->middleware('verified');
 
 //ventas
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\ClienteController;
 
 Route::resource('ventas', VentaController::class)->middleware('verified');
 Route::post("buscar-venta",[VentaController::class, "buscarVenta"])->name("venta.buscar")->middleware('verified');
 Route::post("registrar-foto-venta",[VentaController::class, "registrarFotoVenta"])->name("venta.registrarFotoVenta")->middleware('verified');
 Route::delete("eliminar-foto-venta",[VentaController::class, "eliminarFotoVenta"])->name("venta.eliminarFoto")->middleware('verified');
 Route::get("reporte-ventas", [VentaController::class, "reporte"])->name("venta.reporte")->middleware('verified');
-Route::get("clientes", [VentaController::class, "getClientes"])->name("venta.clientes")->middleware('verified');
+Route::get("clientes-ajax", [VentaController::class, "getClientes"])->name("venta.clientes")->middleware('verified');
 Route::post("cliente-nuevo", [VentaController::class, "storeCliente"])->name("venta.storeCliente")->middleware('verified');
+
+Route::resource('clientes', ClienteController::class)->middleware('verified');
 
 Route::get("reporte-ventas-pdf", [VentaController::class, "reportePDF"])->name("venta.reporte.pdf")->middleware('verified');
 

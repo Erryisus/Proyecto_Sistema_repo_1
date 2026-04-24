@@ -15,16 +15,13 @@
 </head>
 
 <body>
-    <img class="wave" src="{{ asset('inicio/img/wave.png') }}">
-    <div class="container">
-        <div class="img">
-            <img src="{{ asset('inicio/img/bg.svg') }}">
-        </div>
-        <div class="login-content">
+    <div class="container d-flex justify-content-center align-items-center min-vh-100">
+        <div class="login-content card shadow-lg p-5" style="max-width: 400px; width: 100%;">
             <form method="POST" action="{{ route('login') }}">
                 @csrf
-                <img src="{{ asset('inicio/img/avatar.svg') }}">
-                <h2 class="title">BIENVENIDO</h2>
+                <div class="text-center mb-4">
+                    <h2 class="title mb-0">BIENVENIDO</h2>
+                </div>
                 @if (session('mensaje'))
                     <div class="alert alert-warning alert-dismissible fade show mb-0" role="alert">
                         <small>{{ session('mensaje') }}</small>
@@ -89,9 +86,13 @@
                 <div class="text-center">
                     <a class="font-italic isai5" href="">Olvidé mi contraseña</a>
                 </div>
-                <input name="btningresar" class="btn" title="click para ingresar" type="submit"
-                    value="INICIAR SESION">
+                <div class="mt-4 mb-3">
+                    <button name="btningresar" class="btn btn-primary btn-lg btn-block" title="click para ingresar" type="submit">
+                        INICIAR SESIÓN
+                    </button>
+                </div>
                 {{-- login --}}
+
             </form>
         </div>
     </div>
