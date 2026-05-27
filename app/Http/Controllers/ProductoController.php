@@ -12,16 +12,29 @@ class ProductoController extends Controller
      */
     public function index()
     {
-        // $datos=DB::select(" select producto.*,categoria.nombre as 'categoria' from producto
-        //                     inner join categoria ON producto.id_categoria=categoria.id_categoria ");
+        // Última tasa vigente hacia moneda destino (id_moneda_destino = 2)
+        // Usamos el valor_conversion como factor de conversión.
+        $tasaCambiaria = DB::table('tasas_cambio')
+            ->where('id_moneda_destino', 2)
+            ->orderBy('fecha_vigencia', 'desc')
+            ->value('valor_conversion');
+
+        // Fallback por seguridad (evita división/NaN en JS)
+        if (!$tasaCambiaria) {
+            $tasaCambiaria = 1;
+        }
 
         $categoria = DB::select("select * from categoria");
+
         $datos = DB::table("producto")
             ->join("categoria", "producto.id_categoria", "=", "categoria.id_categoria")
-            ->select("producto.*", "categoria.nombre as categoria")
+            ->select(
+                "producto.*",
+                "categoria.nombre as categoria"
+            )
             ->paginate(10);
-        return view("vistas/productos/indexProducto", compact("datos"))
-            ->with("categoria", $categoria);
+
+        return view('vistas/productos/indexProducto', compact('datos', 'categoria', 'tasaCambiaria'));
     }
 
     /**
@@ -40,60 +53,85 @@ class ProductoController extends Controller
     {
         $request->validate([
             "txtcategoria" => "required",
-            "txtcodigoproducto" => "required",
             "txtnombreproducto" => "required",
             "txtprecioproducto" => "required|numeric",
-            "txtstock" => "required|numeric",
-            "txtfoto" => "mimes:png,jpg,jpeg"
+            "txtpreciocompra" => "required|numeric|min:0",
+            "txtstock" => "required|numeric|min:0",
+            "txtstockminimo" => "required|integer|min:0",
+            "txtstockmaximo" => "required|integer|min:0|gte:txtstockminimo",
+            "txtunidadmedida" => "required|in:Gramos,Mililitros,Unidades,Cajas"
         ]);
 
 
-        //validar productos duplicados
-        $producto = DB::select("select count(*) as total from producto where codigo=?", [$request->txtcodigoproducto]);
-        if ($producto[0]->total > 0) {
-            return back()->with("INCORRECTO", "El producto ya se encuentra registrado");
+
+        // Generar código automáticamente: PREFIJO (3 letras) + '-' + correlativo con ceros
+
+        $categoriaId = (int) $request->txtcategoria;
+        $categoria = DB::table('categoria')->where('id_categoria', $categoriaId)->first();
+
+        // Regla de prefijos (según nombre de categoría)
+        $nombreCategoria = strtolower(trim($categoria->nombre ?? ''));
+        $prefix = 'PRO';
+        if (str_contains($nombreCategoria, 'café') || str_contains($nombreCategoria, 'cafe')) {
+            $prefix = 'CAF';
+        } elseif (str_contains($nombreCategoria, 'bebida') || str_contains($nombreCategoria, 'beb')) {
+            $prefix = 'BEB';
+        } elseif (str_contains($nombreCategoria, 'alimento') || str_contains($nombreCategoria, 'alm')) {
+            $prefix = 'ALM';
+        }
+
+        $ultimoCodigo = DB::table('producto')
+            ->where('codigo', 'like', $prefix . '-%')
+            ->orderByDesc('id_producto')
+            ->value('codigo');
+
+        $correlativo = 1;
+        if ($ultimoCodigo) {
+            $parteNumero = preg_replace('/^' . preg_quote($prefix . '-', '/') . '/','', $ultimoCodigo);
+            $parteNumero = preg_replace('/[^0-9]/','', $parteNumero);
+            if (is_numeric($parteNumero) && (int)$parteNumero >= 1) {
+                $correlativo = (int)$parteNumero + 1;
+            }
+        }
+
+        $nuevoCodigo = $prefix . '-' . str_pad((string)$correlativo, 3, '0', STR_PAD_LEFT);
+
+        // Asegurar unicidad (por si existe una duplicidad inesperada)
+        $existe = DB::table('producto')->where('codigo', $nuevoCodigo)->exists();
+        while ($existe) {
+            $correlativo++;
+            $nuevoCodigo = $prefix . '-' . str_pad((string)$correlativo, 3, '0', STR_PAD_LEFT);
+            $existe = DB::table('producto')->where('codigo', $nuevoCodigo)->exists();
         }
 
 
         $registro = DB::table("producto")->insertGetId([
             "id_categoria" => $request->txtcategoria,
-            "codigo" => $request->txtcodigoproducto,
+            "codigo" => $nuevoCodigo,
+
             "nombre" => $request->txtnombreproducto,
             "precio" => $request->txtprecioproducto,
+            "precio_compra" => $request->txtpreciocompra,
             "stock" => $request->txtstock,
+            "stock_minimo" => $request->txtstockminimo,
+            "stock_maximo" => $request->txtstockmaximo,
+            "unidad_medida" => $request->txtunidadmedida,
+            "fecha_vencimiento" => now()->toDateString(),
             "descripcion" => $request->txtdescripcion,
             "estado" => "1"
         ]);
 
 
 
-        try {
-            $foto = $request->file("txtfoto");
-            $nombreFoto = $registro . "-" . $foto->getClientOriginalName();
-            $ruta = storage_path("app/public/FOTO-PRODUCTOS/" . $nombreFoto);
-            copy($foto, $ruta);
-        } catch (\Throwable $th) {
-            $nombreFoto = "";
-        }
 
+        // No se procesa foto (funcionalidad eliminada)
 
-        //actualizar la tabla producto en el campo foto
-        try {
-            $actualizar = DB::update("update producto set foto=? where id_producto=?", [
-                $nombreFoto,
-                $registro
-            ]);
-        } catch (\Throwable $th) {
-            //throw $th;
-        }
-
-
-
-        if ($registro >= 1 and $actualizar == 1) {
+        if ($registro >= 1) {
             return back()->with("CORRECTO", "Producto registrado correctamente");
         } else {
             return back()->with("ERROR", "Error al registrar el producto");
         }
+
     }
 
     /**
@@ -217,61 +255,9 @@ class ProductoController extends Controller
         ], 200);
     }
 
-    public function registrarFotoProducto(Request $request)
-    {
+    // Funcionalidad foto eliminada completamente.
+    // (Métodos intencionalmente deshabilitados para que el sistema no intente usar la columna `foto`.)
 
-        $request->validate([
-            "foto" => "required|mimes:png,jpg,jpeg",
-            "txtid" => "required"
-        ]);
-        $id = $request->txtid;
-
-        try {
-            $foto = $request->file("foto");
-            $nombreFoto = $id . "-" . $foto->getClientOriginalName();
-            $ruta = storage_path("app/public/FOTO-PRODUCTOS/" . $nombreFoto);
-            copy($foto, $ruta);
-        } catch (\Throwable $th) {
-            $nombreFoto = "";
-        }
-
-        //actualizando la tabla producto
-        try {
-            $actualizar = DB::update("update producto set foto=? where id_producto=?", [$nombreFoto, $id]);
-        } catch (\Throwable $th) {
-            //throw $th;
-        }
-
-        if ($actualizar == 1) {
-            return back()->with("CORRECTO", "Foto actualizada correctamente");
-        } else {
-            return back()->with("INCORRECTO", "Error al actualizar la foto");
-        }
-    }
-
-    public function eliminarProducto(Request $request)
-    {
-        $request->validate([
-            "txtid" => "required"
-        ]);
-        $id = $request->txtid;
-        $nombreFoto = DB::select("select foto from producto where id_producto=?", [$id]);
-        $ruta = storage_path("app/public/FOTO-PRODUCTOS/" . $nombreFoto[0]->foto);
-
-        try {
-            $eliminar = unlink($ruta);
-            $actualizarCampo = DB::update("update producto set foto='' where id_producto=?", [$id]);
-        } catch (\Throwable $th) {
-            $eliminar = false;
-            $actualizarCampo = false;
-        }
-
-        if ($eliminar == true and $actualizarCampo == true) {
-            return back()->with("CORRECTO", "Foto eliminada correctamente");
-        } else {
-            return back()->with("INCORRECTO", "Error al eliminar la foto");
-        }
-    }
 
     public function reporte(Request $request)
     {

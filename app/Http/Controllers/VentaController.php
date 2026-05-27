@@ -13,6 +13,48 @@ class VentaController extends Controller
         return response()->json($clientes);
     }
 
+    public function buscarClientePorDni(Request $request)
+    {
+        try {
+            $request->validate([
+                'txtdni' => 'required|numeric'
+            ]);
+
+            $dni = $request->input('txtdni');
+
+            $cliente = DB::table('cliente')
+                ->where('dni', $dni)
+                ->first(['id_cliente', 'nombre', 'apellido', 'dni']);
+
+            if (!$cliente) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cliente no encontrado'
+                ], 404);
+            }
+
+            $name = trim(($cliente->nombre ?? '') . ' ' . ($cliente->apellido ?? ''));
+
+            return response()->json([
+                'success' => true,
+                'id' => $cliente->id_cliente,
+                'name' => $name,
+                'dni' => $cliente->dni
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Error DB: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+
     public function index()
     {
 $usuarios = DB::select("select * from usuario");
@@ -36,9 +78,41 @@ public function create()
     {
         $clientes = DB::select("select * from cliente");
         $usuarios = DB::select("select * from usuario");
-        $productos = DB::select("select * from producto");
-        return view("vistas/ventas/registroVentas")->with("clientes", $clientes)->with("usuarios", $usuarios)->with("productos", $productos);
+
+        // Última tasa vigente hacia moneda destino (id_moneda_destino = 2)
+        $tasaCambiaria = DB::table('tasas_cambio')
+            ->where('id_moneda_destino', 2)
+            ->orderBy('fecha_vigencia', 'desc')
+            ->value('valor_conversion');
+
+        // Fallback por seguridad
+        if (!$tasaCambiaria) {
+            $tasaCambiaria = 1;
+        }
+
+        // Productos base en USD (precio) + precálculo en Bs para la vista/JS
+        $productos = DB::table('producto')
+            ->select('*')
+            ->get()
+            ->map(function ($p) use ($tasaCambiaria) {
+                $p->precio_bs = (float) $p->precio * (float) $tasaCambiaria;
+                $p->precio_compra_bs = (float) ($p->precio_compra ?? 0) * (float) $tasaCambiaria;
+
+                // Aseguramos que el guardado/validación use Bs en lugar de USD si el formulario envía Bs
+                $p->precio = $p->precio_bs;
+                $p->precio_compra = $p->precio_compra_bs;
+
+                return $p;
+            });
+
+
+        return view("vistas/ventas/registroVentas")
+            ->with("clientes", $clientes)
+            ->with("usuarios", $usuarios)
+            ->with("productos", $productos)
+            ->with("tasaCambiaria", $tasaCambiaria);
     }
+
 
     public function store(Request $request)
     {
@@ -58,6 +132,15 @@ public function create()
         if (count($request->cantidades) != $num_items || count($request->subtotales) != $num_items) {
             return back()->with("INCORRECTO", "Arrays de productos inconsistentes");
         }
+        // Aseguramos que la venta se procese estrictamente en Bs.
+        $tasaCambiaria = DB::table('tasas_cambio')
+            ->where('id_moneda_destino', 2)
+            ->orderBy('fecha_vigencia', 'desc')
+            ->value('valor_conversion');
+        if (!$tasaCambiaria) {
+            $tasaCambiaria = 1;
+        }
+
         $grand_total = 0;
         $precios_unitarios = [];
         foreach ($request->productos as $i => $id_prod) {
@@ -65,16 +148,26 @@ public function create()
             if (!$prod) {
                 return back()->with("INCORRECTO", "Producto inválido: " . $id_prod);
             }
-            $precio = $prod->precio;
+
+            // precio en BD está en USD: convertimos a Bs para validar y guardar.
+            $precio_usd = (float) $prod->precio;
+            $precio_bs = $precio_usd * (float) $tasaCambiaria;
+
             $qty = (float) $request->cantidades[$i];
-            $expected_sub = $precio * $qty;
+            $expected_sub = $precio_bs * $qty;
             $sub = (float) $request->subtotales[$i];
+
             if (abs($sub - $expected_sub) > 0.01) {
-                return back()->with("INCORRECTO", "Subtotal " . ($i+1) . " no coincide con precio producto (S/. " . $precio . " x " . $qty . ")");
+                return back()->with(
+                    "INCORRECTO",
+                    "Subtotal " . ($i + 1) . " no coincide con precio producto (" . number_format($precio_bs, 2, '.', '') . " Bs x " . $qty . ")"
+                );
             }
-            $precios_unitarios[$i] = $precio;
+
+            $precios_unitarios[$i] = $precio_bs;
             $grand_total += $sub;
         }
+
         $request->merge(['precios_unitarios' => $precios_unitarios]);
         $grand_total = 0;
         foreach ($request->subtotales as $i => $sub) {
@@ -87,14 +180,33 @@ public function create()
         $ultima = (int)DB::table('venta')->where('estado', 1)->count();
         $codigo_venta = str_pad($ultima + 1, 4, '0', STR_PAD_LEFT);
 
+        // Persistimos también el equivalente en USD.
+        // UI trabaja en Bs, por eso convertimos usando la tasa activa.
+        $tasa_activa = DB::table('tasas_cambio')
+            ->where('id_moneda_destino', 2)
+            ->orderBy('fecha_vigencia', 'desc')
+            ->value('valor_conversion');
+
+        if (!$tasa_activa || (float)$tasa_activa <= 0) {
+            $tasa_activa = $tasaCambiaria ?? 1;
+        }
+
+        $total_en_usd = ((float)$grand_total) / ((float)$tasa_activa);
+
         $id_venta = DB::table("venta")->insertGetId([
             "codigo_venta" => $codigo_venta,
             "id_cliente" => $request->txtcliente,
             "id_usuario" => auth()->user()->id_usuario ?? 1,
-            "fecha" => $request->txtfecha,
+            "fecha" => \Carbon\Carbon::now()->toDateTimeString(),
+            "total_usd" => $total_en_usd,
+            "tasa_bcv_usada" => $tasa_activa,
+            "total_bs" => $grand_total,
+            // compatibilidad con esquema actual (si todavía usa `total`)
             "total" => $grand_total,
             "estado" => 1
         ]);
+
+
 
         foreach ($request->productos as $i => $id_prod) {
             $qty = $request->cantidades[$i];

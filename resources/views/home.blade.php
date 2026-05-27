@@ -212,16 +212,20 @@ if (ventasCtx) {
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    color: white;
+    color: #000; /* icono y texto en negro */
     border-radius: 20px;
     transition: all 0.3s ease;
+    background: #f8f9fa; /* fondo claro pero limpio */
+    border: 1px solid rgba(0,0,0,0.06);
 }
+
 
 .action-card:hover {
     transform: scale(1.05);
     text-decoration: none;
-    color: white;
+    color: #000;
 }
+
 
 .action-card i {
     margin-bottom: 1rem;

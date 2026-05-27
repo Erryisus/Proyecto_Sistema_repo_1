@@ -31,7 +31,7 @@ class ClienteController extends Controller
             'correo' => 'nullable|email|unique:cliente,correo|max:100',
         ]);
 
-        DB::table('cliente')->insert([
+        $idCreado = DB::table('cliente')->insertGetId([
             'dni' => $request->dni,
             'nombre' => $request->nombre,
             'apellido' => $request->apellido,
@@ -40,8 +40,25 @@ class ClienteController extends Controller
             'correo' => $request->correo,
         ]);
 
+        // Si se creó desde el flujo de “Nueva Venta”, retornar a esa pantalla.
+        // (Se detecta por flags enviados en el formulario: venta_regresar=1)
+        if ($request->input('venta_regresar') == '1') {
+            $dni = $request->input('venta_dni');
+
+            $clienteCreado = DB::table('cliente')
+                ->where('id_cliente', $idCreado)
+                ->first(['id_cliente', 'nombre', 'apellido', 'dni']);
+
+            return redirect()->route('ventas.create')
+                ->with('cliente', $clienteCreado);
+        }
+
+
+
         return redirect()->route('clientes.index')->with('CORRECTO', 'Cliente registrado correctamente');
+
     }
+
 
     public function edit($id)
     {

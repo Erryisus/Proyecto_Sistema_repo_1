@@ -21,7 +21,7 @@
     <div class="row mb-4">
         <div class="col-md-3"><strong>Cliente:</strong> {{ $venta->cliente }}</div>
         <div class="col-md-3"><strong>Fecha:</strong> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</div>
-        <div class="col-md-3"><strong>Total:</strong> S/. {{ number_format($venta->total, 2) }}</div>
+        <div class="col-md-3"><strong>Total:</strong> Bs. {{ number_format($venta->total, 2) }}</div>
         <div class="col-md-3"><strong>Estado:</strong> {{ $venta->estado ? 'Activa' : 'Anulada' }}</div>
     </div>
 
@@ -47,8 +47,8 @@
                     <tr>
                         <td>{{ $detalle->producto_nombre }}</td>
                         <td>{{ $detalle->cantidad }}</td>
-                        <td>S/. {{ number_format($detalle->precio, 2) }}</td>
-                        <td>S/. {{ number_format($detalle->subtotal, 2) }}</td>
+                        <td>Bs. {{ number_format($detalle->precio, 2) }}</td>
+                        <td>Bs. {{ number_format($detalle->subtotal, 2) }}</td>
                     </tr>
                 @empty
                     <tr>
@@ -65,3 +65,4 @@
     </div>
 
 @endsection
+

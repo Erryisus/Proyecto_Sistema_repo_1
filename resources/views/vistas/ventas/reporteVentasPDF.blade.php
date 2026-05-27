@@ -33,11 +33,11 @@
             Total Ventas
         </div>
         <div class="metric">
-            <strong>S/. {{ number_format($total_ingresos, 2) }}</strong><br>
+            <strong>Bs. {{ number_format($total_ingresos, 2) }}</strong><br>
             Ingresos Totales
         </div>
         <div class="metric">
-            <strong>S/. {{ number_format($total_ventas > 0 ? $total_ingresos / $total_ventas : 0, 2) }}</strong><br>
+            <strong>Bs. {{ number_format($total_ventas > 0 ? $total_ingresos / $total_ventas : 0, 2) }}</strong><br>
             Ticket Promedio
         </div>
         <div class="metric">
@@ -87,7 +87,7 @@
                     @endphp
                     {{ count($detalles) }}
                 </td>
-                <td class="text-right">S/. {{ number_format($venta->total, 2) }}</td>
+                <td class="text-right">Bs. {{ number_format($venta->total, 2) }}</td>
                 <td>{{ $venta->estado ? 'Activa' : 'Anulada' }}</td>
             </tr>
             @if(count($detalles) > 0)
@@ -95,7 +95,7 @@
             <tr class="venta-details">
                 <td colspan="3"></td>
                 <td colspan="2"> &nbsp;&nbsp;&nbsp; {{ $det->nombre }} (x{{ $det->cantidad }})</td>
-                <td class="text-right">S/. {{ number_format($det->subtotal, 2) }}</td>
+                <td class="text-right">Bs. {{ number_format($det->subtotal, 2) }}</td>
                 <td></td>
             </tr>
             @endforeach
@@ -105,7 +105,7 @@
         <tfoot>
             <tr class="total-row">
                 <td colspan="5"></td>
-                <td class="text-right"><strong>S/. {{ number_format($total_ingresos, 2) }}</strong></td>
+                <td class="text-right"><strong>Bs. {{ number_format($total_ingresos, 2) }}</strong></td>
                 <td></td>
             </tr>
         </tfoot>

@@ -51,7 +51,7 @@
 
         <div class="row col-12">
             <div class="fl-flex-label col-12 col-md-6 mb-3 px-2">
-                <select name="txtcategoria" id="" class="input input__select">
+                <select name="txtcategoria" class="input input__select">
                     <option value="">Seleccionar categoria...</option>
                     @foreach ($categoria as $item)
                         <option value="{{ $item->id_categoria }}">{{ $item->nombre }}</option>
@@ -63,11 +63,10 @@
             </div>
 
             <div class="fl-flex-label col-12 col-md-6 mb-3 px-2">
-                <input type="text" class="input input__text" placeholder="Codigo del producto" name="txtcodigoproducto">
-                @error('txtcodigoproducto')
-                    <small class="mensaje">{{$message}}</small>
-                @enderror
+                <input type="hidden" name="txtcodigoproducto" value="">
+                <small class="text-muted">El código del producto se genera automáticamente.</small>
             </div>
+
         </div>
 
         <div class="row col-12">
@@ -79,7 +78,7 @@
             </div>
 
             <div class="fl-flex-label col-12 col-md-6 mb-3 px-2">
-                <input type="number" class="input input__text" placeholder="Precio del producto" name="txtprecioproducto" step="0.05">
+                <input type="number" class="input input__text" placeholder="Precio de venta" name="txtprecioproducto" step="0.05">
                 @error('txtprecioproducto')
                     <small class="mensaje">{{$message}}</small>
                 @enderror
@@ -88,27 +87,56 @@
 
         <div class="row col-12">
             <div class="fl-flex-label col-12 col-md-6 mb-3 px-2">
-                <input type="number" class="input input__text" placeholder="Stock del producto" name="txtstock">
+                <input type="number" class="input input__text" placeholder="Precio de compra" name="txtpreciocompra" step="0.05">
+                @error('txtpreciocompra')
+                    <small class="mensaje">{{$message}}</small>
+                @enderror
+            </div>
+
+            <div class="fl-flex-label col-12 col-md-6 mb-3 px-2">
+                <select name="txtunidadmedida" class="input input__select">
+                    <option value="">Unidad de medida</option>
+                    <option value="Gramos">Gramos</option>
+                    <option value="Mililitros">Mililitros</option>
+                    <option value="Unidades">Unidades</option>
+                    <option value="Cajas">Cajas</option>
+                </select>
+                @error('txtunidadmedida')
+                    <small class="mensaje">{{$message}}</small>
+                @enderror
+            </div>
+        </div>
+
+        <div class="row col-12">
+            <div class="fl-flex-label col-12 col-md-4 mb-3 px-2">
+                <input type="number" class="input input__text" placeholder="Stock" name="txtstock">
                 @error('txtstock')
                     <small class="mensaje">{{$message}}</small>
                 @enderror
             </div>
 
-            <div class="fl-flex-label col-12 col-md-6 mb-3 px-2">
-                <textarea name="txtdescripcion" id="" cols="30" rows="10" placeholder="Descripcion"
-                    class="input input__text"></textarea>
+            <div class="fl-flex-label col-12 col-md-4 mb-3 px-2">
+                <input type="number" class="input input__text" placeholder="Stock mínimo" name="txtstockminimo" step="1">
+                @error('txtstockminimo')
+                    <small class="mensaje">{{$message}}</small>
+                @enderror
+            </div>
+
+            <div class="fl-flex-label col-12 col-md-4 mb-3 px-2">
+                <input type="number" class="input input__text" placeholder="Stock máximo" name="txtstockmaximo" step="1">
+                @error('txtstockmaximo')
+                    <small class="mensaje">{{$message}}</small>
+                @enderror
             </div>
         </div>
 
         <div class="row col-12">
-            <label>Subir foto del producto</label>
             <div class="fl-flex-label col-12 col-md-6 mb-3 px-2">
-                <input type="file" class="input input__text" name="txtfoto" accept=".png, .jpg, .jpeg">
-                @error('txtfoto')
-                    <small class="mensaje">{{$message}}</small>
-                @enderror
-            </div>          
+                <textarea name="txtdescripcion" cols="30" rows="6" placeholder="Descripción" class="input input__text"></textarea>
+            </div>
         </div>
+
+
 
         <div class="text-right px-4">
             <button type="submit" class="btn btn-primary">Guardar</button>

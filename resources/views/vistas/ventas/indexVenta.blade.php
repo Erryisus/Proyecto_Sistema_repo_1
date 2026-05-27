@@ -56,24 +56,7 @@ placeholder="Buscar por cliente o cajero">
         </div>
     </form>
 
-    <div class="overflow-auto">
-        <table class="display table table-striped" cellspacing="0" width="100%">
-            <thead class="table-primary">
-                    <tr>
-                        <th>Código</th>
-                        <th>Cliente</th>
-                        <th>Productos</th>
-                        <th># Ítems</th>
-                        <th>Total</th>
-                        <th>Fecha</th>
-                        <th>Estado</th>
-                        <th>Foto</th>
-                        <th>Acciones</th>
-                    </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-        </table>
-    </div>
+
 
     <section class="card">
         <div class="card-block">
@@ -84,10 +67,9 @@ placeholder="Buscar por cliente o cajero">
                         <th>Cliente</th>
                         <th>Productos</th>
                         <th># Ítems</th>
-                        <th>Total</th>
+                        <th>Total (Bs.)</th>
                         <th>Fecha</th>
                         <th>Estado</th>
-                        <th>Foto</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -98,24 +80,20 @@ placeholder="Buscar por cliente o cajero">
                             <td>{{ $item->cliente }}</td>
                             <td title="{{ $item->productos_list ?? 'N/A' }}">{{ Str::limit($item->productos_list ?? 'N/A', 20) }}</td>
                             <td>{{ $item->num_productos ?? 0 }}</td>
-                            <td>{{ $item->total }}</td>
+                            <td>Bs. {{ number_format($item->total, 2) }}</td>
 <td>{{ \Carbon\Carbon::parse($item->fecha)->format('d/m/Y') }}</td>
                             <td>{{ $item->estado }}</td>
-                            <td>
-                                @if ($item->foto == '' or $item->foto == null)
-                                    <a href="" data-toggle="modal" data-target="#editar{{ $item->id_venta }}">Agregar foto</a>
-                                @else
-                                    <a href="" data-toggle="modal" data-target="#exampleModal{{ $item->id_venta }}">Ver foto</a>
-                                @endif
-                            </td>
-                            <td>
+                                <td>
                                 <a href="{{ route('ventas.edit', $item->id_venta) }}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></a>
+                                <a href="{{ route('ventas.pdf', $item->id_venta) }}" target="_blank" class="btn btn-info btn-sm ml-1"><i class="fas fa-file-pdf"></i></a>
+
                                 <form action="{{route('ventas.destroy', $item->id_venta)}}" class="formulario-eliminar d-inline" method="POST">
                                     @csrf
                                     @method('delete')
                                     <button class="btn btn-danger btn-sm" type="submit"><i class="fas fa-trash"></i></button>
                                 </form>
                             </td>
+
                         </tr>
 
                         <!-- Modal ver foto -->
@@ -199,7 +177,7 @@ placeholder="Buscar por cliente o cajero">
                                 <td>\${item.cliente}</td>
                                 <td title="\${item.productos_list || 'N/A'}">\${Str.limit(item.productos_list || 'N/A', 20)}</td>
                                 <td>\${item.num_productos || 0}</td>
-                                <td>\${item.total}</td>
+                                <td>Bs. \${Number(item.total).toFixed(2)}</td>
 <td>\${new Date(item.fecha).toLocaleDateString('es-PE')}</td>
                                 <td>\${item.estado}</td>
                                 <td>\${item.foto || ''}</td>

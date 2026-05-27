@@ -85,11 +85,23 @@ Route::post("registrar-foto-venta",[VentaController::class, "registrarFotoVenta"
 Route::delete("eliminar-foto-venta",[VentaController::class, "eliminarFotoVenta"])->name("venta.eliminarFoto")->middleware('verified');
 Route::get("reporte-ventas", [VentaController::class, "reporte"])->name("venta.reporte")->middleware('verified');
 Route::get("clientes-ajax", [VentaController::class, "getClientes"])->name("venta.clientes")->middleware('verified');
+Route::post("cliente-buscar-dni", [VentaController::class, "buscarClientePorDni"])->name("venta.clienteBuscarPorDni")->middleware('verified');
 Route::post("cliente-nuevo", [VentaController::class, "storeCliente"])->name("venta.storeCliente")->middleware('verified');
 
 Route::resource('clientes', ClienteController::class)->middleware('verified');
 
+Route::get("ventas/create", [VentaController::class, "create"])->name('ventas.create')->middleware('verified');
+
 Route::get("reporte-ventas-pdf", [VentaController::class, "reportePDF"])->name("venta.reporte.pdf")->middleware('verified');
 
+
+Route::get("ventas/pdf/{id}", [\App\Http\Controllers\PdfVentaController::class, "generarPDF"])->name("ventas.pdf")->middleware('verified');
+
+
 Route::get("reporte-productos", [\App\Http\Controllers\ProductoController::class, "reporte"])->name("producto.reporte")->middleware('verified');
+
+// Tasas de cambio
+Route::get('tasa-cambio', [\App\Http\Controllers\TasaCambioController::class, 'index'])->name('tasa.index')->middleware('verified');
+Route::post('tasa-cambio', [\App\Http\Controllers\TasaCambioController::class, 'store'])->name('tasa.store')->middleware('verified');
+
 

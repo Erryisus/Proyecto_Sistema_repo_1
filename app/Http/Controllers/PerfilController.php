@@ -11,9 +11,8 @@ class PerfilController extends Controller
 {
     public function index()
     {
-        $idUsuario = Auth::user()->id_usuario;
-        $datos = DB::select("select * from usuario where id_usuario=$idUsuario");
-        return view("vistas.perfil", compact("datos"));
+        $usuario = Auth::user();
+        return view("vistas.perfil", compact("usuario"));
     }
 
     public function actualizarIMG(Request $request)
@@ -22,37 +21,25 @@ class PerfilController extends Controller
             "foto" => "required|image|mimes:jpeg,png,jpg"
         ]);
 
+        $usuario = Auth::user();
         $file = $request->file("foto");
-        $idUsuario = Auth::user()->id_usuario;
-        $nombreArchivo = $idUsuario . "." . strtolower($file->getClientOriginalExtension());
-        // Create dir if not exists
+        $nombreArchivo = $usuario->id_usuario . "." . strtolower($file->getClientOriginalExtension());
         $dir = storage_path("app/public/FOTOS-PERFIL-USUARIO");
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
-        $ruta = $dir . '/' . $nombreArchivo;
-
-        $verificarFoto = DB::select(" select foto from usuario where id_usuario=$idUsuario  ");
-        $nombreFotoAnterior = $verificarFoto[0]->foto ?? null;
-
-        if ($nombreFotoAnterior) {
-            $rutaFotoAnterior = $dir . '/' . $nombreFotoAnterior;
+        // Delete old photo
+        if ($usuario->foto) {
+            $rutaFotoAnterior = $dir . '/' . $usuario->foto;
             @unlink($rutaFotoAnterior);
         }
 
         $res = $file->move($dir, $nombreArchivo);
+        $usuario->foto = $nombreArchivo;
+        $actualizarFoto = $usuario->save();
 
-        try {
-            $actualizarFoto = DB::update("update usuario set foto='$nombreArchivo' where id_usuario=$idUsuario");
-            if ($actualizarFoto == 0) {
-                $actualizarFoto = 1;
-            }
-        } catch (\Throwable $th) {
-            $actualizarFoto = 0;
-        }
-
-        if ($res and $actualizarFoto) {
+        if ($res && $actualizarFoto) {
             return back()->with("mensaje", "imagen actualizada correctamente");
         } else {
             return back()->with("error", "error al actualizar la imagen");
@@ -61,19 +48,18 @@ class PerfilController extends Controller
 
     public function eliminarFotoPerfil()
     {
-        $idUsuario = Auth::user()->id_usuario;
-        $nombreFoto = Auth::user()->foto;
-        $ruta = storage_path("app/public/FOTOS-PERFIL-USUARIO/$nombreFoto");
-
-        try {
-            $res = unlink($ruta);
-            $actualizarCampoFoto = DB::update("update usuario set foto='' where id_usuario=$idUsuario ");
-        } catch (\Throwable $th) {
-            $res = false;
-            $actualizarCampoFoto = false;
+        $usuario = Auth::user();
+        if ($usuario->foto) {
+            $ruta = storage_path("app/public/FOTOS-PERFIL-USUARIO/" . $usuario->foto);
+            $res = @unlink($ruta);
+            $usuario->foto = null;
+            $actualizar = $usuario->save();
+        } else {
+            $res = true;
+            $actualizar = true;
         }
 
-        if ($res and $actualizarCampoFoto) {
+        if ($res && $actualizar) {
             return back()->with("mensaje", "Imagen eliminada correctamente");
         } else {
             return back()->with("error", "Error al eliminar la imagen");
@@ -89,24 +75,12 @@ class PerfilController extends Controller
             "usuario" => "required",
         ]);
 
-        $idUsuario = Auth::user()->id_usuario;
-
-        try {
-            $modificar = DB::update(" update usuario set nombre=?, apellido=?, usuario=?, telefono=?, direccion=?, correo=? where id_usuario=$idUsuario ",[
-                $request->nombre,
-                $request->apellido,
-                $request->usuario,
-                $request->telefono,
-                $request->direccion,
-                $request->correo,
-            ]);
-            $modificar = true;
-        } catch (\Throwable $th) {
-            $modificar = false;
-        }
+        $usuario = Auth::user();
+        $datos = $request->only(['nombre', 'apellido', 'usuario', 'telefono', 'direccion', 'correo']);
+        $modificar = $usuario->update($datos);
 
         if ($modificar) {
-            return back()->with("mensaje", "Datos actualizados correctamento");
+            return back()->with("mensaje", "Datos actualizados correctamente");
         } else {
             return back()->with("error", "Error al modificar los datos");
         }
@@ -125,33 +99,6 @@ class PerfilController extends Controller
         $claveActual = ($request->claveActual);
         $claveNueva = $request->claveNueva;
 
-        $idUsuario= Auth::user()->id_usuario;
-        $verificarClave=DB::select(" select password from usuario where id_usuario=$idUsuario ");
-        $verificarClave=$verificarClave[0]->password;
-
-        if(Hash::check($claveActual,$verificarClave)){
-
-            $claveNueva=Hash::make($claveNueva);
-
-            try {
-                $actualizar=DB::update(" update usuario set password=? where id_usuario=$idUsuario ",[
-                    $claveNueva
-                ]);
-                $actualizar=true;
-            } catch (\Throwable $th) {
-                $actualizar=false;
-            }
-
-            if ($actualizar) {
-                return back()->with("CORRECTO", "Clave actualizada correctamente");
-            } else {
-                return back()->with("INCORRECTO", "Error al actualizar la clave");
-            }
-
-
-        }else{
-            return back()->with("INCORRECTO", "La clave actual no es correcta");
-        }
 
 
     }

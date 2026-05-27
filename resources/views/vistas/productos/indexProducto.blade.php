@@ -34,7 +34,14 @@
     <h5 class="text-center text-secondary">LISTA DE PRODUCTOS
     </h5>
 
-    <a href="{{route("productos.create")}}" class="btn btn-primary">Registrar nuevo producto</a>
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <a href="{{ route('productos.create') }}" class="btn btn-primary">Registrar nuevo producto</a>
+
+        <div class="ml-auto">
+            <button id="btn-cambio-moneda" class="btn btn-outline-primary" data-moneda="VES">Moneda: VES (Bs.)</button>
+        </div>
+    </div>
+
 
     <form action="" id="formBuscar" method="POST">
         @csrf
@@ -47,29 +54,7 @@
         </div>
     </form>
 
-    <div class="overflow-auto">
-        <table class="display table table-striped" cellspacing="0" width="100%">
-            <thead class="table-primary">
-                <tr>
-                    <th>Codigo</th>
-                    <th>Nombre</th>
-                    <th>Descripcion</th>
-                    <th>Precio</th>
-                    <th>Stock</th>
-                    <th>Categoria</th>
-                    <th>Foto</th>
-                    <th></th>
-                </tr>
-
-            </thead>
-
-            <tbody id="tbody">
-
-            </tbody>
-        </table>
-    </div>
-
-
+    {{-- Tabla única (sin duplicar thead/titles) --}}
     <section class="card">
         <div class="card-block">
             <table id="example2" class="display table table-striped" cellspacing="0" width="100%">
@@ -79,76 +64,55 @@
                         <th>Nombre</th>
                         <th>Descripcion</th>
                         <th>Precio</th>
+                        <th>Precio compra</th>
                         <th>Stock</th>
+                        <th>Stock mínimo</th>
+                        <th>Stock máximo</th>
+                        <th>Unidad</th>
                         <th>Categoria</th>
-                        <th>Foto</th>
-                        <th></th>
+                        <th>Fecha venc.</th>
+                        <th>Acciones</th>
+
                     </tr>
 
                 </thead>
 
-                <tbody>
+                <tbody id="tbody">
                     @foreach ($datos as $item)
                         <tr>
                             <td>{{ $item->codigo }}</td>
                             <td>{{ $item->nombre }}</td>
                             <td>{{ $item->descripcion }}</td>
-                            <td>{{ $item->precio }}</td>
+                            <td class="celda-precio" data-usd="{{ $item->precio }}"
+                                data-bs="{{ $item->precio * $tasaCambiaria }}">
+                                {{ number_format($item->precio * $tasaCambiaria, 2) }} Bs.</td>
+                            <td class="celda-precio-compra" data-usd-compra="{{ $item->precio_compra }}"
+                                data-bs-compra="{{ ($item->precio_compra ?? 0) * $tasaCambiaria }}">
+                                {{ number_format(($item->precio_compra ?? 0) * $tasaCambiaria, 2) }} Bs.</td>
+
                             <td>{{ $item->stock }}</td>
+                            <td>{{ $item->stock_minimo }}</td>
+                            <td>{{ $item->stock_maximo }}</td>
+                            <td>{{ $item->unidad_medida }}</td>
                             <td>{{ $item->categoria }}</td>
-                            <td>
-                                @if ($item->foto == '' or $item->foto == null)
-                                    <a href="" data-toggle="modal" data-target="#editar{{ $item->codigo }}">Agregar
-                                        foto</a>
-                                @else
-                                    {{-- <img style="width: 50px" src="{{ asset("storage/FOTO-PRODUCTOS/$item->foto") }}"
-                                        alt=""> --}}
-                                    <a href="" data-toggle="modal" data-target="#exampleModal{{ $item->codigo }}">Ver
-                                        foto</a>
-                                @endif
-                            </td>
+                            <td>{{ $item->fecha_vencimiento }}</td>
+
                             <td>
                                 <a href="" class="btn btn-warning btn-sm" data-toggle="modal"
                                     data-target="#editModal{{ $item->codigo }}"><i class="fas fa-edit"></i></a>
                                 {{-- <a href="" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></a> --}}
-                                <form action="{{route("productos.destroy",$item->codigo)}}" class="formulario-eliminar d-inline" method="POST">
+                                <form action="{{ route('productos.destroy', $item->codigo) }}"
+                                    class="formulario-eliminar d-inline" method="POST">
                                     @csrf
                                     @method('delete')
-                                    <button class="btn btn-danger btn-sm" type="submit"><i class="fas fa-trash"></i></button>
+                                    <button class="btn btn-danger btn-sm" type="submit"><i
+                                            class="fas fa-trash"></i></button>
                                 </form>
                             </td>
                         </tr>
 
-                        <!-- Modal de ver foto del producto -->
-                        <div class="modal fade" id="exampleModal{{ $item->codigo }}" tabindex="-1"
-                            aria-labelledby="exampleModalLabel" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title w-100" id="exampleModalLabel">Foto del producto</h5>
-                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-                                    <form action="{{ route('producto.eliminar') }}" method="POST">
-                                        @csrf
-                                        @method('delete')
-                                        <input type="text" value="{{ $item->id_producto }}" name="txtid" hidden>
-                                        <div class="modal-body text-center">
-                                            <img style="width: 50%" src="{{ asset("storage/FOTO-PRODUCTOS/$item->foto") }}"
-                                                alt="">
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary"
-                                                data-dismiss="modal">Cerrar</button>
-                                            <button type="submit" class="btn btn-danger">Eliminar</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Modal de editar datos del producto -->
+
                         <div class="modal fade" id="editModal{{ $item->codigo }}" tabindex="-1"
                             aria-labelledby="exampleModalLabel" aria-hidden="true">
                             <div class="modal-dialog">
@@ -227,37 +191,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Modal para subir foto del producto -->
-                        <div class="modal fade" id="editar{{ $item->codigo }}" tabindex="-1"
-                            aria-labelledby="exampleModalLabel" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title w-100" id="exampleModalLabel">Foto del producto</h5>
-                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-                                    <div class="modal-body text-center">
-                                        <form action="{{ route('producto.registrarFotoProducto') }}"
-                                            id="guardar{{ $item->id_producto }}" method="POST"
-                                            enctype="multipart/form-data">
-                                            @csrf
-                                            <input type="hidden" value="{{ $item->id_producto }}" name="txtid">
-                                            <input class="input input__text" type="file" name="foto"
-                                                accept=".jpg, .png, .jpeg">
-                                        </form>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary"
-                                            data-dismiss="modal">Cerrar</button>
-                                        <button type="submit" class="btn btn-primary"
-                                            form="guardar{{ $item->id_producto }}">Guardar</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     @endforeach
                 </tbody>
             </table>
@@ -276,6 +209,61 @@
     </section>
 
     <script>
+        const tasaCambiaria = Number({{ $tasaCambiaria }});
+
+        function formatUSD(value) {
+            const n = Number(value) || 0;
+            return `$ ${n.toFixed(2)}`;
+        }
+
+        function formatVES(value) {
+            const n = Number(value) || 0;
+            return `${n.toFixed(2)} Bs.`;
+        }
+
+        // Estado inicial: VES (Bolívares)
+        let monedaActual = 'VES';
+
+        const btnCambioMoneda = document.getElementById('btn-cambio-moneda');
+
+        function aplicarMoneda() {
+            const precios = document.querySelectorAll('.celda-precio');
+            const preciosCompra = document.querySelectorAll('.celda-precio-compra');
+
+            if (monedaActual === 'USD') {
+                btnCambioMoneda.textContent = 'Moneda: USD ($)';
+                btnCambioMoneda.dataset.moneda = 'USD';
+
+                precios.forEach(td => {
+                    td.textContent = formatUSD(td.dataset.usd);
+                });
+                preciosCompra.forEach(td => {
+                    td.textContent = formatUSD(td.dataset.usdCompra);
+                });
+            } else {
+                // VES
+                btnCambioMoneda.textContent = 'Moneda: VES (Bs.)';
+                btnCambioMoneda.dataset.moneda = 'VES';
+
+                precios.forEach(td => {
+                    td.textContent = formatVES(td.dataset.bs);
+                });
+                preciosCompra.forEach(td => {
+                    td.textContent = formatVES(td.dataset.bsCompra);
+                });
+            }
+        }
+
+        if (btnCambioMoneda) {
+            // Mostrar por defecto en Bs.
+            aplicarMoneda();
+
+            btnCambioMoneda.addEventListener('click', () => {
+                monedaActual = monedaActual === 'VES' ? 'USD' : 'VES';
+                aplicarMoneda();
+            });
+        }
+
         let formBuscar = document.getElementById("formBuscar")
         formBuscar.addEventListener("submit", buscarDatos)
         formBuscar.addEventListener("keyup", buscarDatos)
@@ -298,10 +286,15 @@
                             <td>${item.nombre}</td>
                             <td>${item.descripcion}</td>
                             <td>${item.precio}</td>
+                            <td>${item.precio_compra ?? ''}</td>
                             <td>${item.stock}</td>
+                            <td>${item.stock_minimo ?? ''}</td>
+                            <td>${item.stock_maximo ?? ''}</td>
+                            <td>${item.unidad_medida ?? ''}</td>
                             <td>${item.cate}</td>
-                            <td>${item.foto}</td>
+                            <td>${item.fecha_vencimiento ?? ''}</td>
                             <td><a href="productos/${item.id_producto}" class="btn btn-primary btn-sm"><i class="fas fa-eye"></i> Ver</a></td>
+
                         </tr>
                         `
                     });

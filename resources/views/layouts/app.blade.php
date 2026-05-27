@@ -49,7 +49,9 @@
 
     {{-- google fonts --}}
     <link href="https://fonts.gstatic.com" rel="preconnect">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500&display=swap"
+        rel="stylesheet">
 
     {{-- pnotify --}}
     <script src="{{ asset('pnotify/js/jquery.min.js') }}"></script>
@@ -62,7 +64,8 @@
     {{-- Chart.js Latest --}}
     <script src="{{ asset('chart/chart.js') }}"></script>
     {{-- Chart.js Datalabels Plugin --}}
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js">
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
     @laravelPWA
@@ -103,11 +106,14 @@
                             <div class="dropdown user-menu">
                                 <button class="dropdown-toggle" id="dd-user-menu" type="button" data-toggle="dropdown"
                                     aria-haspopup="true" aria-expanded="false">
-                                    @if (Auth::user()->foto == null)
-                                        <img src="{{ asset('app/publico/img/user.svg') }}" alt="">
-                                    @else
+                                    @if (Auth::user()->foto)
                                         <img src="{{ asset('storage/FOTOS-PERFIL-USUARIO/' . Auth::user()->foto) }}"
-                                            alt="">
+                                            class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;"
+                                            alt="Foto de perfil">
+                                    @else
+                                        <img src="{{ asset('app/publico/img/user.svg') }}" class="rounded-circle"
+                                            style="width: 40px; height: 40px; object-fit: cover;"
+                                            alt="Foto por defecto">
                                     @endif
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-right pt-0" aria-labelledby="dd-user-menu">
@@ -182,6 +188,15 @@
                                 <span class="lbl">Productos</span>
                             </a>
                         </li>
+
+                        <li>
+                            <a href="{{ route('tasa.index') }}"
+                                class="{{ Request::is('tasa-cambio*') ? 'activo' : '' }}">
+                                <i class="fas fa-money-bill-wave icono-submenu"></i>
+                                <span class="lbl">Tasa de Cambio</span>
+                            </a>
+                        </li>
+
                         <li>
                             <a href="{{ route('clientes.index') }}"
                                 class="{{ Request::is('clientes*') ? 'activo' : '' }}">
@@ -193,7 +208,7 @@
                     </ul>
                 </li>
 
-<li class="grey with-sub {{ Request::is('entradas*', 'categoria*') ? 'opened' : '' }}">
+                <li class="grey with-sub {{ Request::is('entradas*', 'categoria*') ? 'opened' : '' }}">
                     <span>
                         <img src="{{ asset('img-inicio/img-1.png') }}" class="img-inicio" alt="">
                         <span class="lbl">ENTRADAS</span>
@@ -216,20 +231,22 @@
                     </ul>
                 </li>
 
-<li class="grey with-sub {{ Request::is('ventas*') ? 'opened' : '' }}">
+                <li class="grey with-sub {{ Request::is('ventas*') ? 'opened' : '' }}">
                     <span>
                         <img src="{{ asset('img-inicio/programar.png') }}" class="img-inicio" alt="">
                         <span class="lbl">VENTAS</span>
                     </span>
                     <ul>
                         <li>
-                            <a href="{{ route('ventas.create') }}" class="{{ Request::is('ventas.create') ? 'activo' : '' }}">
+                            <a href="{{ route('ventas.create') }}"
+                                class="{{ Request::is('ventas.create') ? 'activo' : '' }}">
                                 <i class="fas fa-plus icono-submenu"></i>
                                 <span class="lbl">Registro de ventas</span>
                             </a>
                         </li>
                         <li>
-                            <a href="{{ route('ventas.index') }}" class="{{ Request::is('ventas.index*') ? 'activo' : '' }}">
+                            <a href="{{ route('ventas.index') }}"
+                                class="{{ Request::is('ventas.index*') ? 'activo' : '' }}">
                                 <i class="fas fa-list icono-submenu"></i>
                                 <span class="lbl">Ventas registradas</span>
                             </a>
@@ -237,20 +254,23 @@
                     </ul>
                 </li>
 
-                <li class="blue with-sub {{ Request::is('venta.reporte') || Request::is('producto.reporte') ? 'opened' : '' }}">
+                <li
+                    class="blue with-sub {{ Request::is('venta.reporte') || Request::is('producto.reporte') ? 'opened' : '' }}">
                     <span>
                         <img src="{{ asset('img-inicio/info.png') }}" class="img-inicio" alt="">
                         <span class="lbl">Reportes</span>
                     </span>
                     <ul>
                         <li>
-                            <a href="{{ route('venta.reporte') }}" class="{{ Request::is('venta.reporte') ? 'activo' : '' }}">
+                            <a href="{{ route('venta.reporte') }}"
+                                class="{{ Request::is('venta.reporte') ? 'activo' : '' }}">
                                 <i class="fas fa-chart-bar icono-submenu"></i>
                                 <span class="lbl">Reportes de Ventas</span>
                             </a>
                         </li>
                         <li>
-                            <a href="{{ route('producto.reporte') }}" class="{{ Request::is('producto.reporte') ? 'activo' : '' }}">
+                            <a href="{{ route('producto.reporte') }}"
+                                class="{{ Request::is('producto.reporte') ? 'activo' : '' }}">
                                 <i class="fas fa-boxes icono-submenu"></i>
                                 <span class="lbl">Reporte de Productos</span>
                             </a>
@@ -521,4 +541,3 @@
 </body>
 
 </html>
-

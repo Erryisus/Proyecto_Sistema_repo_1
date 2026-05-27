@@ -27,42 +27,52 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label>C.I <span class="text-danger">*</span></label>
-                                <input type="text" name="dni" class="form-control @error('dni') is-invalid @enderror" value="{{ old('dni') }}" required>
+                                <input type="text" name="dni" class="form-control @error('dni') is-invalid @enderror"
+                                    value="{{ old('dni') }}" required>
                                 @error('dni')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Nombre <span class="text-danger">*</span></label>
-                                <input type="text" name="nombre" class="form-control @error('nombre') is-invalid @enderror" value="{{ old('nombre') }}" required>
+                                <input type="text" name="nombre"
+                                    class="form-control @error('nombre') is-invalid @enderror" value="{{ old('nombre') }}"
+                                    required>
                                 @error('nombre')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Apellido <span class="text-danger">*</span></label>
-                                <input type="text" name="apellido" class="form-control @error('apellido') is-invalid @enderror" value="{{ old('apellido') }}" required>
+                                <input type="text" name="apellido"
+                                    class="form-control @error('apellido') is-invalid @enderror"
+                                    value="{{ old('apellido') }}" required>
                                 @error('apellido')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Teléfono <span class="text-danger">*</span></label>
-                                <input type="text" name="telefono" class="form-control @error('telefono') is-invalid @enderror" value="{{ old('telefono') }}" required>
+                                <input type="text" name="telefono"
+                                    class="form-control @error('telefono') is-invalid @enderror"
+                                    value="{{ old('telefono') }}" required>
                                 @error('telefono')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Correo <small>(opcional)</small></label>
-                                <input type="email" name="correo" class="form-control @error('correo') is-invalid @enderror" value="{{ old('correo') }}">
+                                <input type="email" name="correo"
+                                    class="form-control @error('correo') is-invalid @enderror" value="{{ old('correo') }}">
                                 @error('correo')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Dirección <small>(opcional)</small></label>
-                                <input type="text" name="direccion" class="form-control @error('direccion') is-invalid @enderror" value="{{ old('direccion') }}">
+                                <input type="text" name="direccion"
+                                    class="form-control @error('direccion') is-invalid @enderror"
+                                    value="{{ old('direccion') }}">
                                 @error('direccion')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -72,10 +82,17 @@
                             <a href="{{ route('clientes.index') }}" class="btn btn-secondary">Cancelar</a>
                             <button type="submit" class="btn btn-primary">Guardar Cliente</button>
                         </div>
+
+                        {{-- Pasar a vuelta a ventas.create luego de guardar, desde el flujo de REGISTRAR NUEVA VENTA --}}
+                        @if (request()->query('venta_regresar') == '1')
+                            <input type="hidden" name="venta_regresar" value="1">
+                            <input type="hidden" name="venta_dni" value="{{ request()->query('venta_dni') }}">
+                        @endif
+
+
                     </form>
                 </div>
             </div>
         </div>
     </div>
 @endsection
-

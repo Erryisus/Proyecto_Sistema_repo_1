@@ -59,7 +59,7 @@
                 <div class="metric-icon mb-3">
                     <i class="fas fa-coins fa-3x text-success"></i>
                 </div>
-                <h2 class="display-5 fw-bold text-success mb-1">S/. {{ number_format($total_ingresos, 2) }}</h2>
+                <h2 class="display-5 fw-bold text-success mb-1">Bs. {{ number_format($total_ingresos, 2) }}</h2>
                 <p class="text-muted h6 mb-0">Ingresos Totales</p>
             </div>
         </div>
@@ -70,7 +70,7 @@
                 <div class="metric-icon mb-3">
                     <i class="fas fa-percentage fa-3x text-info"></i>
                 </div>
-               <h2 class="display-5 fw-bold text-info mb-1">{{ $total_ventas > 0 ? number_format($total_ingresos / $total_ventas, 2) : '0.00' }}</h2>
+               <h2 class="display-5 fw-bold text-info mb-1">Bs. {{ $total_ventas > 0 ? number_format($total_ingresos / $total_ventas, 2) : '0.00' }}</h2>
                 <p class="text-muted h6 mb-0">Ticket Promedio</p>
             </div>
         </div>
@@ -130,7 +130,7 @@
                                 <td class="fw-bold text-primary">{{ $index + 1 }}</td>
                                 <td>{{ Str::limit($p->nombre, 20) }}</td>
                                 <td class="text-center fw-bold">{{ $p->cantidad }}</td>
-                                <td class="text-end fw-bold">S/. {{ number_format($p->ingresos, 2) }}</td>
+                                <td class="text-end fw-bold">Bs. {{ number_format($p->ingresos, 2) }}</td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -156,7 +156,7 @@
                 <tr>
                     <td>{{ $p->nombre }}</td>
                     <td>{{ $p->cantidad }}</td>
-                    <td>S/. {{ number_format($p->ingresos, 2) }}</td>
+                    <td>Bs. {{ number_format($p->ingresos, 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>
