@@ -100,8 +100,36 @@ Route::get("ventas/pdf/{id}", [\App\Http\Controllers\PdfVentaController::class, 
 
 Route::get("reporte-productos", [\App\Http\Controllers\ProductoController::class, "reporte"])->name("producto.reporte")->middleware('verified');
 
+// PDF reporte de productos
+Route::get("reporte-productos-pdf", [\App\Http\Controllers\ProductoController::class, "reportePDF"])
+    ->name("producto.reporte.pdf")
+    ->middleware('verified');
+
+
 // Tasas de cambio
 Route::get('tasa-cambio', [\App\Http\Controllers\TasaCambioController::class, 'index'])->name('tasa.index')->middleware('verified');
 Route::post('tasa-cambio', [\App\Http\Controllers\TasaCambioController::class, 'store'])->name('tasa.store')->middleware('verified');
+
+
+// Materia prima (CRUD + movimientos stock)
+use App\Http\Controllers\MateriaPrimaController;
+use App\Http\Controllers\MovimientoMateriaController;
+
+Route::resource('materias-primas', MateriaPrimaController::class)->middleware('verified');
+
+Route::get('movimientos-materia', [MovimientoMateriaController::class, 'index'])
+    ->name('movimientos-materia.index')
+    ->middleware('verified');
+
+Route::get('movimientos-materia/create', [MovimientoMateriaController::class, 'create'])
+    ->name('movimientos-materia.create')
+    ->middleware('verified');
+
+Route::post('movimientos-materia', [MovimientoMateriaController::class, 'store'])
+    ->name('movimientos-materia.store')
+    ->middleware('verified');
+
+
+
 
 

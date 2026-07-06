@@ -27,9 +27,10 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label>C.I <span class="text-danger">*</span></label>
-                                <input type="text" name="dni" class="form-control @error('dni') is-invalid @enderror"
-                                    value="{{ old('dni') }}" required>
-                                @error('dni')
+                                <input type="text" name="cedula"
+                                    class="form-control @error('cedula') is-invalid @enderror" value="{{ old('cedula') }}"
+                                    required>
+                                @error('cedula')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -86,7 +87,7 @@
                         {{-- Pasar a vuelta a ventas.create luego de guardar, desde el flujo de REGISTRAR NUEVA VENTA --}}
                         @if (request()->query('venta_regresar') == '1')
                             <input type="hidden" name="venta_regresar" value="1">
-                            <input type="hidden" name="venta_dni" value="{{ request()->query('venta_dni') }}">
+                            <input type="hidden" name="venta_cedula" value="{{ request()->query('venta_cedula') }}">
                         @endif
 
 

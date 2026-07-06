@@ -51,15 +51,13 @@
             <div id="productos-container">
                 <!-- Rows dinámicas se agregan aquí -->
                 <div class="row mb-3 product-row" data-index="0">
-                    <div class="col-md-5">
-                        <select name="productos[]" class="form-control product-select" required>
-                            <option value="">Seleccionar producto</option>
-                            @foreach ($productos as $p)
-                                <option value="{{ $p->id_producto }}" data-precio="{{ $p->precio_bs }}">{{ $p->nombre }}
-                                    ({{ number_format($p->precio_bs, 2) }} Bs.)
-                                </option>
-                            @endforeach
-                        </select>
+                    <div class="col-md-5" style="position:relative;">
+                        <input type="text" class="form-control product-search"
+                            placeholder="Buscar por nombre o código..." autocomplete="off" required>
+                        <input type="hidden" name="productos[]" class="product-id-hidden" required>
+                        <div class="search-results"
+                            style="position:absolute; left:0; right:0; top:100%; z-index:9999; background:#fff; border:1px solid #ddd; display:none; max-height:240px; overflow:auto;">
+                        </div>
                     </div>
                     <div class="col-md-3">
                         <input type="number" name="cantidades[]" class="form-control qty-input" min="1" required
@@ -81,10 +79,18 @@
             <label>Total General</label>
             <input type="number" id="grand-total" class="form-control" step="0.01" readonly>
         </div>
+        @php
+            $fechaDefault =
+                isset($venta) && !empty($venta->fecha)
+                    ? \Carbon\Carbon::parse($venta->fecha)->format('Y-m-d')
+                    : \Carbon\Carbon::now()->format('Y-m-d');
+        @endphp
+
         <div class="col-md-6">
             <label>Fecha</label>
-            <input type="date" name="txtfecha" class="form-control @error('txtfecha') is-invalid @enderror"
-                value="{{ isset($venta) ? $venta->fecha : date('Y-m-d') }}" required>
+            <input type="date" name="txtfecha" id="txtfecha"
+                class="form-control @error('txtfecha') is-invalid @enderror" value="{{ $fechaDefault }}" required readonly
+                tabindex="-1" style="pointer-events: none; background-color: #e9ecef; color: #495057;">
         </div>
         <div class="col-12">
             @if (isset($venta) && $venta->foto)
@@ -119,7 +125,7 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Cédula (DNI)</label>
-                            <input type="text" name="txtdni" id="txtdniBuscar" class="form-control" required>
+                            <input type="text" name="txtcedula" id="txtcedulaBuscar" class="form-control" required>
                         </div>
 
                         <div id="clienteNoEncontrado" class="alert alert-warning" style="display:none;">
@@ -155,7 +161,7 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>DNI</label>
-                            <input type="text" name="txtdni" class="form-control" required>
+                            <input type="text" name="txtcedula" class="form-control" required>
                         </div>
                         <div class="form-group">
                             <label>Nombre</label>
@@ -198,32 +204,33 @@
             });
         });
 
-        function setClienteSeleccionado(clienteId, nombreCompleto, dni) {
+        function setClienteSeleccionado(clienteId, nombreCompleto, cedula) {
             const optionExists = $('#clienteSelect option[value="' + clienteId + '"]').length > 0;
             if (!optionExists) {
                 $('#clienteSelect').append(
-                    `<option value="${clienteId}" selected>${nombreCompleto}${dni ? ' - ' + dni : ''}</option>`
+                    `<option value="${clienteId}" selected>${nombreCompleto}${cedula ? ' - ' + cedula : ''}</option>`
                 );
             }
             $('#clienteSelect').val(clienteId).trigger('change');
         }
 
-        // Buscar cliente AJAX por DNI
+        // Buscar cliente AJAX por Cédula
         $('#formClienteBuscarCI').submit(function(e) {
             e.preventDefault();
 
-            const dni = $('#txtdniBuscar').val();
+            const cedula = $('#txtcedulaBuscar').val();
 
             $.ajax({
                 url: "{{ route('venta.clienteBuscarPorDni') }}",
                 type: "POST",
                 data: {
-                    txtdni: dni,
+                    txtcedula: cedula,
                     _token: $('form#formClienteBuscarCI input[name="_token"]').val()
                 },
                 success: function(res) {
                     if (res.success) {
-                        setClienteSeleccionado(res.id, res.name, res.dni);
+                        setClienteSeleccionado(res.id, res.name, res.cedula);
+
                         // Cerrar y asegurar que el modal quede completamente oculto
                         $('#modalClienteBuscarCI').modal('hide');
                         // Forzar cierre inmediato (muy importante con modales en AJAX)
@@ -273,13 +280,13 @@
         // redirigimos al formulario de Nuevo Cliente con una variable en sesión.
         // Como no tenemos un endpoint para setear sesión aquí, usamos un redirect con query.
         $('#btnAbrirModalNuevo').click(function() {
-            const dni = $('#txtdniBuscar').val();
+            const cedula = $('#txtcedulaBuscar').val();
 
-            // Guardar el DNI en la URL para que el formulario de cliente pueda autocompletar si lo soportas.
-            // y redirigir a clientes.create.
+            // Guardar la cédula en la URL para que el formulario de cliente pueda autocompletar si lo soportas.
             window.location.href =
-                `{{ route('clientes.create') }}?venta_regresar=1&venta_dni=${encodeURIComponent(dni)}`;
+                `{{ route('clientes.create') }}?venta_regresar=1&venta_cedula=${encodeURIComponent(cedula)}`;
         });
+
 
 
         // Nuevo cliente AJAX (Aceptar)
@@ -295,10 +302,10 @@
                     if (res.success) {
                         const nombre = $('input[name="txtnombre"]').val();
                         const apellido = $('input[name="txtapellido"]').val();
-                        const dni = $('input[name="txtdni"]').val();
+                        const cedula = $('input[name="txtcedula"]').val();
                         const nombreCompleto = `${nombre} ${apellido}`.trim();
 
-                        setClienteSeleccionado(res.id, nombreCompleto, dni);
+                        setClienteSeleccionado(res.id, nombreCompleto, cedula);
                         $('#modalClienteNuevo').modal('hide');
                         $('form#formClienteNuevo')[0].reset();
                         new PNotify({
@@ -332,43 +339,214 @@
         let productIndex = @json(isset($detalles) ? count($detalles) : 1);
 
         // Pre-fill if edit
+        // Pre-fill if edit (ajustado al nuevo buscador)
         @if (isset($detalles))
             @foreach ($detalles as $index => $det)
-                $('.product-row[data-index="{{ $index }}"] .product-select').val('{{ $det->id_producto }}');
-                $('.product-row[data-index="{{ $index }}"] .qty-input').val('{{ $det->cantidad }}');
-                $('.product-row[data-index="{{ $index }}"] .price-input').val('{{ $det->precio }}');
-                $('.product-row[data-index="{{ $index }}"] .subtotal-input').val('{{ $det->subtotal }}');
+                @php
+                    $detPrecioBs = $det->precio ?? ($det->precio_unitario ?? 0);
+                @endphp
+                const prefillRow{{ $index }} = $('.product-row[data-index="{{ $index }}"]');
+                prefillRow{{ $index }}.find('.product-id-hidden').val('{{ $det->id_producto }}');
+                prefillRow{{ $index }}.find('.product-search').val(
+                    '{{ $det->producto_nombre ?? ($det->nombre ?? '') }}');
+                prefillRow{{ $index }}.find('.price-hidden').val('{{ $det->precio ?? 0 }}');
+                prefillRow{{ $index }}.find('.qty-input').val('{{ $det->cantidad }}');
+                prefillRow{{ $index }}.find('.subtotal-input').val('{{ $det->subtotal }}');
             @endforeach
         @endif
 
         $('#add-product').click(function() {
             const newRow = $('.product-row:first').clone(true);
-            newRow.find('select, input').val('').trigger('change');
+
+            // Limpiar buscador/valores del producto clonado
+            newRow.find('.product-search').val('');
+            newRow.find('.product-id-hidden').val('');
+            newRow.find('.price-hidden').val('');
+            newRow.find('.qty-input').val('1');
+            newRow.find('.subtotal-input').val('');
+
             newRow.removeAttr('data-index').attr('data-index', productIndex);
             newRow.find('.remove-row').show();
+
+            // Ocultar resultados del dropdown al clonar
+            newRow.find('.search-results').hide().html('');
+
             $('#productos-container').append(newRow);
             productIndex++;
             updateGrandTotal();
         });
 
         $(document).on('click', '.remove-row', function() {
-            if ($('.product-row').length > 1) {
-                $(this).closest('.product-row').remove();
+            const row = $(this).closest('.product-row');
+            const allRows = $('.product-row');
+
+            // Si hay más de una fila, eliminarla completamente.
+            if (allRows.length > 1) {
+                row.remove();
                 updateGrandTotal();
+                return;
             }
+
+            // Si es la última fila, NO eliminar: resetear/limpiar inputs internos.
+            row.find('.product-id-hidden').val('');
+            row.find('.product-search').val('');
+            row.find('.price-hidden').val('');
+            row.find('.qty-input').val('');
+            row.find('.subtotal-input').val('');
+
+            // Asegurar que el dropdown de resultados quede limpio.
+            row.find('.search-results').hide().html('');
+
+            updateGrandTotal();
         });
 
-        $(document).on('change', '.product-select', function() {
-            const precio = $(this).find('option:selected').data('precio') || 0;
-            // precio ya viene en Bs desde backend
-            $(this).closest('.product-row').find('.price-hidden').val(precio);
-            updateRowSubtotal($(this).closest('.product-row'));
+        // Buscar producto AJAX (nombre o codigo) y seleccionar
+        // usando endpoint existente: producto.buscar
+        const tasaCambiariaBs = @json(isset($tasaCambiaria) ? $tasaCambiaria : 1);
+
+        function debounce(fn, wait) {
+            let t;
+            return function(...args) {
+                clearTimeout(t);
+                t = setTimeout(() => fn.apply(this, args), wait);
+            };
+        }
+
+        function renderResults(container, items) {
+            if (!items || items.length === 0) {
+                container.html('<div style="padding:8px;color:#777;">Sin resultados</div>');
+                container.show();
+                return;
+            }
+
+            const html = items.map(p => {
+                const codigo = p.codigo ?? '';
+                const nombre = p.nombre ?? '';
+
+                // Endpoint retorna precio (USD según el código del sistema). Convertimos a Bs.
+                const precioUsd = parseFloat(p.precio ?? 0) || 0;
+                const precioBs = precioUsd * parseFloat(tasaCambiariaBs || 1);
+                const precioLabel =
+                    `(${precioBs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.)`;
+
+                return `
+                    <div class="product-result-item"
+                        style="padding:8px; cursor:pointer; border-bottom:1px solid #eee;"
+                        data-id="${p.id_producto}"
+                        data-precio-bs="${precioBs}"
+                        data-nombre="${nombre.replace(/"/g,'"')}"
+                        data-codigo="${codigo}">
+                        <div style="font-weight:600;">${nombre} <small style="color:#666;">(${codigo})</small></div>
+                        <div style="color:#333;">${precioLabel}</div>
+                    </div>
+                `;
+            }).join('');
+
+            container.html(html);
+            container.show();
+        }
+
+        function hideResults(container) {
+            container.hide();
+            container.html('');
+        }
+
+        $(document).on('input', '.product-search', debounce(function() {
+            const row = $(this).closest('.product-row');
+            const container = row.find('.search-results');
+
+            const txt = ($(this).val() || '').trim();
+            if (txt.length < 1) {
+                hideResults(container);
+                return;
+            }
+
+            const token = $('meta[name="csrf-token"]').attr('content') || $('input[name="_token"]').first()
+                .val();
+
+            $.ajax({
+                url: "{{ route('producto.buscar') }}",
+                method: 'POST',
+                data: {
+                    buscar: txt,
+                    _token: token
+                },
+                success: function(res) {
+                    if (res && res.success) {
+                        renderResults(container, res.dato);
+                    } else {
+                        renderResults(container, []);
+                    }
+                },
+                error: function() {
+                    renderResults(container, []);
+                }
+            });
+        }, 250));
+
+        $(document).on('click', '.product-result-item', function() {
+            const item = $(this);
+            const pickedRow = item.closest('.product-row');
+
+            const idProducto = item.data('id');
+            const precioBs = parseFloat(item.data('precio-bs')) || 0;
+            const nombre = item.data('nombre') || '';
+            const codigo = item.data('codigo') || '';
+
+            // 1) Verificar si el producto ya existe en alguna fila actual.
+            //    Si existe, en vez de llenar una fila nueva, incrementamos la cantidad de la fila existente.
+            const matchingRow = $(
+                `.product-row .product-id-hidden[value="${String(idProducto).replace(/\\/g, '\\\\').replace(/\"/g, '\\"')}"]`
+            ).closest('.product-row');
+
+            if (matchingRow && matchingRow.length > 0 && matchingRow.is('.product-row')) {
+                // Incrementar por 1 (o por la cantidad seleccionada si la había en la fila pulsada).
+                const qtyToAdd = (() => {
+                    const v = parseFloat(pickedRow.find('.qty-input').val());
+                    return (!pickedRow.find('.qty-input').val() || Number.isNaN(v) || v <= 0) ? 1 : v;
+                })();
+
+                const prevQty = parseFloat(matchingRow.find('.qty-input').val());
+                const newQty = (Number.isNaN(prevQty) || prevQty <= 0 ? 0 : prevQty) + qtyToAdd;
+
+                matchingRow.find('.qty-input').val(newQty);
+                // Asegurar que precio y subtotal estén coherentes
+                matchingRow.find('.price-hidden').val(precioBs);
+                updateRowSubtotal(matchingRow);
+                updateGrandTotal();
+
+                // Limpiar dropdown de la fila actual
+                hideResults(pickedRow.find('.search-results'));
+                return;
+            }
+
+            // 2) Si no existe, se aplica la selección en la fila donde se hizo click.
+            pickedRow.find('.product-id-hidden').val(idProducto);
+            pickedRow.find('.product-search').val(`${nombre} (${codigo})`);
+            pickedRow.find('.price-hidden').val(precioBs);
+
+            // Si la cantidad viene vacía (o inválida) por defecto asignar 1 para facturación rápida
+            const currentQty = parseFloat(pickedRow.find('.qty-input').val());
+            if (!pickedRow.find('.qty-input').val() || Number.isNaN(currentQty) || currentQty <= 0) {
+                pickedRow.find('.qty-input').val('1');
+            }
+
+            updateRowSubtotal(pickedRow);
             updateGrandTotal();
+
+            hideResults(pickedRow.find('.search-results'));
         });
 
         $(document).on('input', '.qty-input', function() {
             updateRowSubtotal($(this).closest('.product-row'));
             updateGrandTotal();
+        });
+
+        // Cerrar dropdown si se hace click fuera
+        $(document).on('click', function(e) {
+            if ($(e.target).closest('.product-row').length === 0) {
+                $('.search-results').hide().html('');
+            }
         });
 
         function updateRowSubtotal(row) {

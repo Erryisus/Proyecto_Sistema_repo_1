@@ -23,7 +23,7 @@ class ClienteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'dni' => 'required|unique:cliente,dni',
+'cedula' => 'required|unique:cliente,cedula',
             'nombre' => 'required|string|max:100',
             'apellido' => 'required|string|max:100',
             'telefono' => 'required|string|max:20',
@@ -32,7 +32,7 @@ class ClienteController extends Controller
         ]);
 
         $idCreado = DB::table('cliente')->insertGetId([
-            'dni' => $request->dni,
+            'cedula' => $request->cedula,
             'nombre' => $request->nombre,
             'apellido' => $request->apellido,
             'telefono' => $request->telefono,
@@ -43,11 +43,11 @@ class ClienteController extends Controller
         // Si se creó desde el flujo de “Nueva Venta”, retornar a esa pantalla.
         // (Se detecta por flags enviados en el formulario: venta_regresar=1)
         if ($request->input('venta_regresar') == '1') {
-            $dni = $request->input('venta_dni');
+            $cedula = $request->input('venta_cedula');
 
             $clienteCreado = DB::table('cliente')
                 ->where('id_cliente', $idCreado)
-                ->first(['id_cliente', 'nombre', 'apellido', 'dni']);
+                ->first(['id_cliente', 'nombre', 'apellido', 'cedula']);
 
             return redirect()->route('ventas.create')
                 ->with('cliente', $clienteCreado);
@@ -77,7 +77,7 @@ class ClienteController extends Controller
         }
 
         $request->validate([
-            'dni' => 'required|unique:cliente,dni,' . $id . ',id_cliente',
+            'cedula' => 'required|unique:cliente,cedula,' . $id . ',id_cliente',
             'nombre' => 'required|string|max:100',
             'apellido' => 'required|string|max:100',
             'telefono' => 'required|string|max:20',
@@ -86,7 +86,7 @@ class ClienteController extends Controller
         ]);
 
         DB::table('cliente')->where('id_cliente', $id)->update([
-            'dni' => $request->dni,
+            'cedula' => $request->cedula,
             'nombre' => $request->nombre,
             'apellido' => $request->apellido,
             'telefono' => $request->telefono,

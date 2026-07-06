@@ -28,42 +28,54 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label>C.I <span class="text-danger">*</span></label>
-                                <input type="text" name="dni" class="form-control @error('dni') is-invalid @enderror" value="{{ old('dni', $cliente->dni) }}" required>
-                                @error('dni')
+                                <input type="text" name="cedula"
+                                    class="form-control @error('cedula') is-invalid @enderror"
+                                    value="{{ old('cedula', $cliente->cedula) }}" required>
+                                @error('cedula')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Nombre <span class="text-danger">*</span></label>
-                                <input type="text" name="nombre" class="form-control @error('nombre') is-invalid @enderror" value="{{ old('nombre', $cliente->nombre) }}" required>
+                                <input type="text" name="nombre"
+                                    class="form-control @error('nombre') is-invalid @enderror"
+                                    value="{{ old('nombre', $cliente->nombre) }}" required>
                                 @error('nombre')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Apellido <span class="text-danger">*</span></label>
-                                <input type="text" name="apellido" class="form-control @error('apellido') is-invalid @enderror" value="{{ old('apellido', $cliente->apellido) }}" required>
+                                <input type="text" name="apellido"
+                                    class="form-control @error('apellido') is-invalid @enderror"
+                                    value="{{ old('apellido', $cliente->apellido) }}" required>
                                 @error('apellido')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Teléfono <span class="text-danger">*</span></label>
-                                <input type="text" name="telefono" class="form-control @error('telefono') is-invalid @enderror" value="{{ old('telefono', $cliente->telefono) }}" required>
+                                <input type="text" name="telefono"
+                                    class="form-control @error('telefono') is-invalid @enderror"
+                                    value="{{ old('telefono', $cliente->telefono) }}" required>
                                 @error('telefono')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Correo <small>(opcional)</small></label>
-                                <input type="email" name="correo" class="form-control @error('correo') is-invalid @enderror" value="{{ old('correo', $cliente->correo) }}">
+                                <input type="email" name="correo"
+                                    class="form-control @error('correo') is-invalid @enderror"
+                                    value="{{ old('correo', $cliente->correo) }}">
                                 @error('correo')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Dirección <small>(opcional)</small></label>
-                                <input type="text" name="direccion" class="form-control @error('direccion') is-invalid @enderror" value="{{ old('direccion', $cliente->direccion) }}">
+                                <input type="text" name="direccion"
+                                    class="form-control @error('direccion') is-invalid @enderror"
+                                    value="{{ old('direccion', $cliente->direccion) }}">
                                 @error('direccion')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -79,4 +91,3 @@
         </div>
     </div>
 @endsection
-

@@ -1,5 +1,6 @@
 <?php
 
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -18,16 +19,15 @@ class VentaController extends Controller
     public function buscarClientePorDni(Request $request)
     {
         try {
-$request->validate([
-                'txtcedula' => 'required|numeric',
+            $request->validate([
+                'txtdni' => 'required|numeric'
             ]);
 
-            $cedula = $request->input('txtcedula');
+            $dni = $request->input('txtdni');
 
             $cliente = DB::table('cliente')
-                ->where('cedula', $cedula)
-                ->first(['id_cliente', 'nombre', 'apellido', 'cedula']);
-
+                ->where('dni', $dni)
+                ->first(['id_cliente', 'nombre', 'apellido', 'dni']);
 
             if (!$cliente) {
                 return response()->json([
@@ -38,13 +38,12 @@ $request->validate([
 
             $name = trim(($cliente->nombre ?? '') . ' ' . ($cliente->apellido ?? ''));
 
-return response()->json([
+            return response()->json([
                 'success' => true,
                 'id' => $cliente->id_cliente,
                 'name' => $name,
-                'cedula' => $cliente->cedula,
+                'dni' => $cliente->dni
             ]);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -57,7 +56,6 @@ return response()->json([
             ], 500);
         }
     }
-
 
     public function index()
     {
@@ -79,6 +77,7 @@ return response()->json([
             ->leftJoin("producto", "venta_detalle.id_producto", "=", "producto.id_producto")
             ->groupBy("venta.id_venta", "cliente.nombre")
             ->paginate(10);
+
         return view("vistas/ventas/indexVenta", compact("datos", "usuarios", "clientes", "productos"));
     }
 
@@ -119,7 +118,6 @@ return response()->json([
             ->with("productos", $productos)
             ->with("tasaCambiaria", $tasaCambiaria);
     }
-
 
     public function store(Request $request)
     {
@@ -180,16 +178,15 @@ return response()->json([
         $grand_total = 0;
         foreach ($request->subtotales as $i => $sub) {
             if ((float)$sub != (float)$request->cantidades[$i] * (float)$request->precios_unitarios[$i]) {
-                return back()->with("INCORRECTO", "Subtotal " . ($i + 1) . " no coincide");
+                return back()->with("INCORRECTO", "Subtotal " . ($i+1) . " no coincide");
             }
             $grand_total += (float)$sub;
         }
 
-        $ultima = (int)DB::table('venta')->where('estado', 1)->count();
+        $ultima = (int) DB::table('venta')->where('estado', 1)->count();
         $codigo_venta = str_pad($ultima + 1, 4, '0', STR_PAD_LEFT);
 
         // Persistimos también el equivalente en USD.
-        // UI trabaja en Bs, por eso convertimos usando la tasa activa.
         $tasa_activa = DB::table('tasas_cambio')
             ->where('id_moneda_destino', 2)
             ->orderBy('fecha_vigencia', 'desc')
@@ -199,7 +196,7 @@ return response()->json([
             $tasa_activa = $tasaCambiaria ?? 1;
         }
 
-        $total_en_usd = ((float)$grand_total) / ((float)$tasa_activa);
+        $total_en_usd = ((float) $grand_total) / ((float) $tasa_activa);
 
         $id_venta = DB::table("venta")->insertGetId([
             "codigo_venta" => $codigo_venta,
@@ -209,11 +206,9 @@ return response()->json([
             "total_usd" => $total_en_usd,
             "tasa_bcv_usada" => $tasa_activa,
             "total_bs" => $grand_total,
-            // compatibilidad con esquema actual
             "total" => $grand_total,
             "estado" => 1
         ]);
-
 
         foreach ($request->productos as $i => $id_prod) {
             $qty = $request->cantidades[$i];
@@ -296,12 +291,15 @@ return response()->json([
             $qty = (float) $request->cantidades[$i];
             $expected_sub = $precio * $qty;
             $sub = (float) $request->subtotales[$i];
+
             if (abs($sub - $expected_sub) > 0.01) {
                 return back()->with("INCORRECTO", "Subtotal " . ($i+1) . " no coincide (S/. " . $precio . " x " . $qty . ")");
             }
+
             $precios_unitarios[$i] = $precio;
             $grand_total += $sub;
         }
+
         $request->merge(['precios_unitarios' => $precios_unitarios]);
         $grand_total = 0;
         foreach ($request->subtotales as $i => $sub) {
@@ -311,15 +309,12 @@ return response()->json([
             $grand_total += (float)$sub;
         }
 
-        // Delete old detalles
         DB::table('venta_detalle')->where('id_venta', $id)->delete();
 
-        // Update cabecera
         DB::update("UPDATE venta SET id_cliente=?, fecha=?, total=? WHERE id_venta=?", [
             $request->txtcliente, $request->txtfecha, $grand_total, $id
         ]);
 
-        // Insert new detalles
         foreach ($request->productos as $i => $id_prod) {
             $qty = $request->cantidades[$i];
             if ($qty > 0) {
@@ -398,7 +393,6 @@ return response()->json([
             unlink($ruta);
             DB::update("UPDATE venta SET foto='' WHERE id_venta=?", [$id]);
         }
-
         return back()->with("CORRECTO", "Foto eliminada correctamente");
     }
 
@@ -407,21 +401,16 @@ return response()->json([
         $fecha_desde = $request->fecha_desde ?? date('Y-m-01');
         $fecha_hasta = $request->fecha_hasta ?? date('Y-m-d');
 
-        // Ajuste clave: la columna `venta.fecha` se guarda con timestamp.
-        // Usamos límites completos para que el día actual (YYYY-MM-DD) incluya horas.
-        $fechaDesdeDt = \Carbon\Carbon::parse($fecha_desde)->startOfDay();
-        $fechaHastaDt = \Carbon\Carbon::parse($fecha_hasta)->endOfDay();
-
         $total_ventas = DB::table('venta')
-            ->whereBetween('fecha', [$fechaDesdeDt, $fechaHastaDt])
+            ->whereBetween('fecha', [$fecha_desde, $fecha_hasta])
             ->count();
 
         $total_ingresos = DB::table('venta')
-            ->whereBetween('fecha', [$fechaDesdeDt, $fechaHastaDt])
+            ->whereBetween('fecha', [$fecha_desde, $fecha_hasta])
             ->sum('total');
 
         $total_ingresos_usd = DB::table('venta')
-            ->whereBetween('fecha', [$fechaDesdeDt, $fechaHastaDt])
+            ->whereBetween('fecha', [$fecha_desde, $fecha_hasta])
             ->sum('total_usd');
 
         $ticket_promedio_usd = $total_ventas > 0 ? $total_ingresos_usd / $total_ventas : 0;
@@ -429,7 +418,7 @@ return response()->json([
         $top_productos = DB::table('venta_detalle')
             ->join('producto', 'venta_detalle.id_producto', '=', 'producto.id_producto')
             ->join('venta', 'venta_detalle.id_venta', '=', 'venta.id_venta')
-            ->whereBetween('venta.fecha', [$fechaDesdeDt, $fechaHastaDt])
+            ->whereBetween('venta.fecha', [$fecha_desde, $fecha_hasta])
             ->select('producto.nombre', DB::raw('SUM(venta_detalle.cantidad) as cantidad'), DB::raw('SUM(venta_detalle.subtotal) as ingresos'))
             ->groupBy('producto.id_producto', 'producto.nombre')
             ->orderByDesc('ingresos')
@@ -437,12 +426,12 @@ return response()->json([
             ->get();
 
         $fechas = DB::table('venta')
-            ->whereBetween('fecha', [$fechaDesdeDt, $fechaHastaDt])
+            ->whereBetween('fecha', [$fecha_desde, $fecha_hasta])
             ->groupBy(DB::raw('DATE(fecha)'))
             ->pluck(DB::raw('DATE(fecha) as fecha'))->toArray();
 
         $ingresos_fechas = DB::table('venta')
-            ->whereBetween('fecha', [$fechaDesdeDt, $fechaHastaDt])
+            ->whereBetween('fecha', [$fecha_desde, $fecha_hasta])
             ->groupBy(DB::raw('DATE(fecha)'))
             ->select(DB::raw('DATE(fecha) as fecha'), DB::raw('SUM(total) as ingresos'))
             ->pluck('ingresos', 'fecha')->toArray();
@@ -463,24 +452,23 @@ return response()->json([
     public function storeCliente(Request $request)
     {
         try {
-$request->validate([
-                'txtcedula' => 'required|unique:cliente,cedula',
+            $request->validate([
+                'txtdni' => 'required|unique:cliente,dni',
                 'txtnombre' => 'required',
                 'txtapellido' => 'required',
                 'txttelefono' => 'required',
                 'txtdireccion' => 'required',
-                'txtcorreo' => 'required|email|unique:cliente,correo',
+                'txtcorreo' => 'required|email|unique:cliente,correo'
             ]);
 
             $cliente = DB::table('cliente')->insertGetId([
-                'cedula' => $request->txtcedula,
+                'dni' => $request->txtdni,
                 'nombre' => $request->txtnombre,
                 'apellido' => $request->txtapellido,
                 'telefono' => $request->txttelefono,
                 'direccion' => $request->txtdireccion,
-                'correo' => $request->txtcorreo,
+                'correo' => $request->txtcorreo
             ]);
-
 
             return response()->json(['success' => true, 'id' => $cliente]);
         } catch (\Illuminate\Validation\ValidationException $e) {

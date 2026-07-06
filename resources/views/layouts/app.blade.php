@@ -231,12 +231,38 @@
                     </ul>
                 </li>
 
+                {{-- MATERIA PRIMA --}}
+                <li
+                    class="grey with-sub {{ Request::is('materias-primas*', 'movimientos-materia*') ? 'opened' : '' }}">
+                    <span>
+                        <img src="{{ asset('img-inicio/info.png') }}" class="img-inicio" alt="">
+                        <span class="lbl">MATERIA PRIMA</span>
+                    </span>
+                    <ul>
+                        <li>
+                            <a href="{{ route('materias-primas.index') }}"
+                                class="{{ Request::is('materias-primas*') ? 'activo' : '' }}">
+                                <i class="fas fa-boxes icono-submenu"></i>
+                                <span class="lbl">Inventario de Insumos</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('movimientos-materia.index') }}"
+                                class="{{ Request::is('movimientos-materia*') ? 'activo' : '' }}">
+                                <i class="fas fa-history icono-submenu"></i>
+                                <span class="lbl">Historial de Movimientos</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
                 <li class="grey with-sub {{ Request::is('ventas*') ? 'opened' : '' }}">
                     <span>
                         <img src="{{ asset('img-inicio/programar.png') }}" class="img-inicio" alt="">
                         <span class="lbl">VENTAS</span>
                     </span>
                     <ul>
+
                         <li>
                             <a href="{{ route('ventas.create') }}"
                                 class="{{ Request::is('ventas.create') ? 'activo' : '' }}">

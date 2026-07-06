@@ -50,7 +50,7 @@
             <tbody>
                 @forelse ($clientes as $cliente)
                     <tr>
-                        <td><strong>{{ $cliente->dni }}</strong></td>
+                        <td><strong>{{ $cliente->cedula }}</strong></td>
                         <td>{{ $cliente->nombre }} {{ $cliente->apellido }}</td>
                         <td>{{ $cliente->telefono }}</td>
                         <td>{{ $cliente->correo ?? 'N/A' }}</td>
@@ -59,7 +59,8 @@
                             <a href="{{ route('clientes.edit', $cliente->id_cliente) }}" class="btn btn-warning btn-sm">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <form action="{{ route('clientes.destroy', $cliente->id_cliente) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este cliente?')">
+                            <form action="{{ route('clientes.destroy', $cliente->id_cliente) }}" method="POST"
+                                class="d-inline" onsubmit="return confirm('¿Eliminar este cliente?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-danger btn-sm">

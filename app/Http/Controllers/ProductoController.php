@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 
 class ProductoController extends Controller
 {
@@ -43,7 +45,19 @@ class ProductoController extends Controller
     public function create()
     {
         $categoria = DB::select("select * from categoria");
-        return view("vistas/productos/registroProductos")->with("categoria", $categoria);
+
+        // Tasa activa USD -> VES
+        $tasaCambiaria = DB::table('tasas_cambio')
+            ->where('id_moneda_destino', 2)
+            ->orderBy('fecha_vigencia', 'desc')
+            ->value('valor_conversion');
+
+        // Respaldo si no hay tasas registradas o la consulta devuelve null
+        $tasaCambiaria = $tasaCambiaria ?? 1.00;
+
+        return view("vistas/productos/registroProductos")
+            ->with("categoria", $categoria)
+            ->with("tasaCambiaria", $tasaCambiaria);
     }
 
     /**
@@ -263,10 +277,26 @@ class ProductoController extends Controller
     {
         $bajo_stock = $request->bajo_stock ?? 10;
 
+        // Tasa USD -> Bs (usa valor_conversion como factor)
+        $tasaCambiaria = DB::table('tasas_cambio')
+            ->where('id_moneda_destino', 2)
+            ->orderBy('fecha_vigencia', 'desc')
+            ->value('valor_conversion');
+        if (!$tasaCambiaria) {
+            $tasaCambiaria = 1;
+        }
+
         $total_productos = DB::table('producto')->where('estado', 1)->count();
         $bajo_stock_count = DB::table('producto')->where('estado', 1)->where('stock', '<', $bajo_stock)->count();
-        $total_value = DB::table('producto')->where('estado', 1)->sum(DB::raw('precio * stock'));
-        $avg_price = $total_productos > 0 ? DB::table('producto')->where('estado', 1)->avg('precio') : 0;
+
+        // Valores inventario (sin promedios):
+        // - Valor USD = sum(precio * stock)
+        // - Valor Bs  = USD * tasaCambiaria
+        $total_value_usd = DB::table('producto')
+            ->where('estado', 1)
+            ->sum(DB::raw('precio * stock'));
+
+        $total_value_bs = (float)$total_value_usd * (float)$tasaCambiaria;
 
         $top_productos = DB::table('producto')
             ->leftJoin('categoria', 'producto.id_categoria', '=', 'categoria.id_categoria')
@@ -279,18 +309,81 @@ class ProductoController extends Controller
         $productos_categoria = DB::table('producto')
             ->leftJoin('categoria', 'producto.id_categoria', '=', 'categoria.id_categoria')
             ->where('producto.estado', 1)
-            ->select('categoria.nombre', DB::raw('COUNT(producto.id_producto) as total'), DB::raw('SUM(producto.precio * producto.stock) as valor_total'))
+            ->select(
+                'categoria.nombre',
+                DB::raw('COUNT(producto.id_producto) as total'),
+                DB::raw('SUM(producto.precio * producto.stock) as valor_total')
+            )
             ->groupBy('categoria.id_categoria', 'categoria.nombre')
             ->get();
 
         return view('vistas.productos.reporteProductos', compact(
             'total_productos',
             'bajo_stock_count',
-            'total_value',
-            'avg_price',
+            'total_value_usd',
+            'total_value_bs',
             'top_productos',
             'productos_categoria',
-            'bajo_stock'
+            'bajo_stock',
+            'tasaCambiaria'
         ));
     }
+
+    public function reportePDF(Request $request)
+    {
+        $bajo_stock = $request->bajo_stock ?? 10;
+
+        // Tasa USD -> Bs
+        $tasaCambiaria = DB::table('tasas_cambio')
+            ->where('id_moneda_destino', 2)
+            ->orderBy('fecha_vigencia', 'desc')
+            ->value('valor_conversion');
+
+        if (!$tasaCambiaria) {
+            $tasaCambiaria = 1;
+        }
+
+        // Métricas (sin promedios)
+        $total_productos = DB::table('producto')->where('estado', 1)->count();
+        $bajo_stock_count = DB::table('producto')->where('estado', 1)->where('stock', '<', $bajo_stock)->count();
+
+        $total_value_usd = DB::table('producto')
+            ->where('estado', 1)
+            ->sum(DB::raw('precio * stock'));
+
+        $total_value_bs = (float)$total_value_usd * (float)$tasaCambiaria;
+
+        // Listado completo con inventario y valores
+        $productos = DB::table('producto')
+            ->leftJoin('categoria', 'producto.id_categoria', '=', 'categoria.id_categoria')
+            ->where('producto.estado', 1)
+            ->select(
+                'producto.codigo',
+                'producto.nombre',
+                'categoria.nombre as categoria',
+                'producto.stock',
+                'producto.precio',
+                DB::raw('(producto.precio * producto.stock) as valor_usd')
+            )
+            ->orderByDesc('valor_usd')
+            ->get()
+            ->map(function ($p) use ($tasaCambiaria) {
+                $p->valor_bs = (float)$p->valor_usd * (float)$tasaCambiaria;
+                return $p;
+            });
+
+        $pdf = Pdf::loadView('vistas.productos.reporteProductosPDF', compact(
+            'bajo_stock',
+            'total_productos',
+            'bajo_stock_count',
+            'total_value_usd',
+            'total_value_bs',
+            'tasaCambiaria',
+            'productos'
+        ));
+
+        $filename = 'reporte-productos-' . date('Y-m-d') . '.pdf';
+        return $pdf->stream($filename);
+    }
 }
+
